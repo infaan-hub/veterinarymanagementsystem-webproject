@@ -1,6 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.utils import timezone
+import re
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -77,8 +78,12 @@ class ClientSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         if not validated_data.get("client_id"):
             with transaction.atomic():
-                last_client = Client.objects.select_for_update().order_by("id").last()
-                validated_data["client_id"] = f"{(last_client.id + 1) if last_client else 1:02d}"
+                last_value = 0
+                for value in Client.objects.select_for_update().values_list("client_id", flat=True):
+                    match = re.search(r"(\d+)$", str(value or ""))
+                    if match:
+                        last_value = max(last_value, int(match.group(1)))
+                validated_data["client_id"] = f"{last_value + 1:02d}"
                 return super().create(validated_data)
         return super().create(validated_data)
 
@@ -88,12 +93,19 @@ class ClientSerializer(serializers.ModelSerializer):
 
 
 class PatientSerializer(serializers.ModelSerializer):
+    patient_id = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    client = serializers.PrimaryKeyRelatedField(queryset=Client.objects.all(), required=False)
+    photo_data = serializers.CharField(required=False, allow_blank=True, allow_null=True)
 
     def create(self, validated_data):
         if not validated_data.get("patient_id"):
             with transaction.atomic():
-                last_patient = Patient.objects.select_for_update().order_by("id").last()
-                validated_data["patient_id"] = f"{(last_patient.id + 1) if last_patient else 1:02d}"
+                last_value = 0
+                for value in Patient.objects.select_for_update().values_list("patient_id", flat=True):
+                    match = re.search(r"(\d+)$", str(value or ""))
+                    if match:
+                        last_value = max(last_value, int(match.group(1)))
+                validated_data["patient_id"] = f"{last_value + 1:02d}"
                 return super().create(validated_data)
         return super().create(validated_data)
 
@@ -109,6 +121,7 @@ class PatientSerializer(serializers.ModelSerializer):
             "date_of_birth",
             "weight_kg",
             "photo",
+            "photo_data",
             "client",
             "patient_id",
         ]

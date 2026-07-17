@@ -198,13 +198,15 @@ class PatientViewSet(ModelViewSet):
         return Patient.objects.select_related("client", "client__user").filter(**_client_filter_kwargs(user))
 
     def perform_create(self, serializer):
-        if self.request.user.is_staff:
+        client = serializer.validated_data.get("client")
+        if self.request.user.is_staff and client:
             serializer.save()
             return
         serializer.save(client=_require_client(self.request.user))
 
     def perform_update(self, serializer):
-        if self.request.user.is_staff:
+        client = serializer.validated_data.get("client")
+        if self.request.user.is_staff and client:
             serializer.save()
             return
         serializer.save(client=_require_client(self.request.user))
@@ -222,7 +224,9 @@ class AppointmentViewSet(ModelViewSet):
         return base.filter(**_client_filter_kwargs(user))
 
     def perform_create(self, serializer):
-        client = _require_client(self.request.user)
+        client = serializer.validated_data.get("client")
+        if not client:
+            client = _require_client(self.request.user)
         patient = serializer.validated_data.get("patient")
         if patient and patient.client_id != client.id:
             raise ValidationError({"patient": ["This patient does not belong to the authenticated client."]})
@@ -339,6 +343,7 @@ class ApiRootAPIView(APIView):
             "doctor_login": "/api/doctor/login/",
             "register": "/api/register/",
             "client_register": "/api/client/register/",
+            "token": "/api/token/",
             "token_refresh": "/api/token/refresh/",
             "dashboard": "/api/dashboard/",
             "overview_customer": "/api/overview-customer/",

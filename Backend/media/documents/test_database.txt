@@ -1,0 +1,48 @@
+SQL*Plus: Release 21.0.0.0.0 - Production on Fri Jul 10 12:12:22 2026
+Version 21.3.0.0.0
+
+Copyright (c) 1982, 2021, Oracle.  All rights reserved.
+
+
+Enter user-name: system
+Enter password:
+Last Successful login time: Fri Jul 10 2026 12:09:06 +03:00
+
+Connected to:
+Oracle Database 21c Express Edition Release 21.0.0.0.0 - Production
+Version 21.3.0.0.0
+
+SQL> alter session set "_oracle_script"=true;
+
+Session altered.
+
+SQL> CREATE USER staff_user IDENTIFIED BY oracle123
+  2  DEFAULT TABLESPACE users
+  3  TEMPORARY TABLESPACE temp
+  4  QUOTA 100M ON users;
+
+User created.
+
+SQL> GRANT CREATE SESSION TO staff_user;
+
+Grant succeeded.
+
+SQL> GRANT CREATE TABLE TO staff_user;
+
+Grant succeeded.
+
+SQL> connect staff_user;
+Enter password:
+Connected.
+SQL> create table department(
+  2  dept_id number primary key,
+  3  dept_name varchar(60),
+  4  location varchar(50));
+
+Table created.
+
+
+
+SQL> INSERT INTO department VALUES (1, 'teachers', 'zanzibar');
+
+1 row created.
